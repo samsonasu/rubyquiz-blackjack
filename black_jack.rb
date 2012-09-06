@@ -1,25 +1,102 @@
 require './person'
+require './deck'
+require './strategy'
+Dir["./strategy/*.rb"].each {|file| require file }
+
 class Game
-  attr_accessor :deck, :player, :dealer
+  attr_accessor :deck, :player, :dealer, :last_hand, :silent
+
+  SHOE_SIZE = 5 # number of decks in the dealer's shoe
 
   def initialize
+    @silent = false
     self.deck = create_deck
-    shuffle
-
     self.player = Player.new
-    self.dealer = Dealer.new
+    self.player.strategy = Strategy.new(self) #default player strategy
+    self.dealer = Dealer.new("Dealer")
+    self.dealer.strategy = DealerStrategy.new(self)
 
+    @last_hand = false
+  end
+
+  def silent? 
+    @silent
   end
 
   def deal
-    self.player.cards << self.deck.pop
-    puts "player cards: #{self.player.cards}"
-    self.player.cards << self.deck.pop
-    puts "player cards: #{self.player.cards}"
-    self.dealer.cards << self.deck.pop
-    puts "dealer cards: #{self.dealer.cards}"
-    self.dealer.cards << self.deck.pop
-    puts "dealer cards: #{self.dealer.cards}"
+    if (@last_hand)
+      self.deck = create_deck
+      @last_hand = false
+    end
+
+    self.player.cards.clear
+    self.dealer.cards.clear
+
+    2.times do 
+      self.player.cards << self.deck.pop
+      puts player unless silent?
+      self.dealer.cards << self.deck.pop
+      puts dealer unless silent?
+    end
+
+    if (self.deck.size < SHOE_SIZE * 52 * 0.3) 
+      puts "Last hand before a reshuffle!" unless silent?
+      @last_hand = true
+    end
+
+  end
+
+  #play out the hand based on the player's and the dealer's strategies
+  #this returns the winner of the game
+  def play
+    return nil if player.blackjack? && dealer.blackjack?
+    if player.blackjack?
+      puts "Blackjack!" unless silent?
+      return player
+    end
+
+    if player.blackjack?
+      puts "Blackjack!" unless silent?
+      return dealer
+    end
+    
+    #player goes first
+    play_hand(player)
+    if (player.busted?)
+      return dealer
+    end
+
+    play_hand(dealer) 
+    if dealer.busted? || player.total > dealer.total
+      return player
+    end
+
+    if (player.total == dealer.total)
+      return nil #push
+    end
+
+    return dealer
+  end
+
+  def play_hand(player) 
+    while(true)
+      case player.strategy.action
+      when :hit
+        player.cards << deck.pop 
+        puts "#{player.name} hits: #{player.cards.last}" unless silent?
+      when :stand
+        puts "#{player} stands" unless silent?
+        break
+      when :double_down, :split
+        raise "You're too good, go to a real casino!"
+      end
+
+
+      if player.busted?
+        puts "#{player} busted!" unless silent?
+        break
+      end
+    end
   end
 
   def round
@@ -39,29 +116,14 @@ class Game
     end
   end
 
-  def shuffle
-    self.deck.shuffle!
-  end
-
   def create_deck
-    suits = ["hearts","spades","clubs","diamonds"]
     cards = []
-    suits.each do |suit|
-      cards << {:value => 1,   :suit => suit, :card => "ace"}
-      cards << {:value => 2,   :suit => suit, :card => "2"}
-      cards << {:value => 3,   :suit => suit, :card => "3"}
-      cards << {:value => 4,   :suit => suit, :card => "4"}
-      cards << {:value => 5,   :suit => suit, :card => "5"}
-      cards << {:value => 6,   :suit => suit, :card => "6"}
-      cards << {:value => 7,   :suit => suit, :card => "7"}
-      cards << {:value => 8,   :suit => suit, :card => "8"}
-      cards << {:value => 9,   :suit => suit, :card => "9"}
-      cards << {:value => 10,  :suit => suit, :card => "10"}
-      cards << {:value => 10,  :suit => suit, :card => "jack"}
-      cards << {:value => 10,  :suit => suit, :card => "queen"}
-      cards << {:value => 10,  :suit => suit, :card => "king"}
-    end
-    return cards
-  end
-end
+    SHOE_SIZE.times { cards += Deck.new}
 
+    puts "Every day I'm shuffling..." unless silent?
+    5.times { cards.shuffle! }  #just for good measure :)
+
+    cards
+  end
+
+end

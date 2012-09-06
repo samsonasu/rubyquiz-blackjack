@@ -13,7 +13,7 @@ describe "Game" do
 
   it 'generates a deck on new' do
     card_deck = Game.new().deck
-    card_deck.count.should eql 52
+    card_deck.count.should eql 52 * Game::SHOE_SIZE
   end
 
   describe "Game Play" do
@@ -33,37 +33,36 @@ describe "Game" do
     end
 
     it 'has a total for each player' do  
-      sample_deck =[{:value => 2,   :suit => "hearts", :card => "2"},
-                    {:value => 3,   :suit => "hearts", :card => "3"},
-                    {:value => 4,   :suit => "hearts", :card => "4"},
-                    {:value => 5,   :suit => "hearts", :card => "5"}]
+      sample_deck =[{:value => 2,   :suit => "hearts", :card => "2"}, #dealer
+                    {:value => 3,   :suit => "hearts", :card => "3"}, #player
+                    {:value => 4,   :suit => "hearts", :card => "4"}, #dealer
+                    {:value => 5,   :suit => "hearts", :card => "5"}] #player
 
 
-      game = Game.new()
+      game = Game.new
       game.stub(:deck).and_return(sample_deck)
-      game.stub(:shuffle).and_return(sample_deck)
 
       game.deal
 
-      game.player.total.should eql 9
-      game.dealer.total.should eql 5
+      game.player.total.should eql 8
+      game.dealer.total.should eql 6
     end
     
-    describe "a round" do
+    ##TODO these should move to strategy testers perhaps
+    describe "a basic hand" do
       before(:each) do
-        sample_deck =[{:value => 2,   :suit => "hearts", :card => "2"},
-                      {:value => 3,   :suit => "hearts", :card => "3"},
-                      {:value => 4,   :suit => "hearts", :card => "4"},
-                      {:value => 5,   :suit => "hearts", :card => "5"},
-                      {:value => 6,   :suit => "hearts", :card => "6"},
-                      {:value => 7,   :suit => "hearts", :card => "7"}]
+        sample_deck =[{:value => 9,   :suit => "hearts", :card => "2"},
+                      {:value => 8,   :suit => "hearts", :card => "3"}, 
+                      {:value => 4,   :suit => "hearts", :card => "4"}, #d
+                      {:value => 5,   :suit => "hearts", :card => "5"}, #p
+                      {:value => 6,   :suit => "hearts", :card => "6"}, #d
+                      {:value => 7,   :suit => "hearts", :card => "7"}] #p
         @game = Game.new()
         @game.stub(:deck).and_return(sample_deck)
-        @game.stub(:shuffle).and_return(sample_deck)
         @game.deal
       end
       it 'hit should add another card' do
-        @game.round
+        winner = @game.play
         @game.player.cards.count.should eql 3
         @game.dealer.cards.count.should eql 3
       end
@@ -94,14 +93,6 @@ describe "Game" do
         @game.dealer.should_receive(:stand)
         @game.round
       end
-    end
-  end
-
-  describe "shuffle" do
-    it 'shuffles the cards so they are\'t in order' do
-      card_deck = Game.new()
-      card_deck.shuffle
-      card_deck.should_not eql Game.new()
     end
   end
 end
