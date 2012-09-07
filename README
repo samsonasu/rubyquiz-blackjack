@@ -1,2 +1,23 @@
 This is a ruby quiz to create a blackjack game.  Working to build it out as a
 simulation that determines strategy based on statistics.
+
+The simulation now uses 5 decks in the "shoe" and has support for custom strategies.  A good next step for an interested party would be to implement betting, doubling down, and a CardCountingStrategy :) 
+
+Usage: 
+
+  ruby play.rb <hands> <strategy>
+
+
+There are currently 4 strategies to play with, just pass in the class name to see how they work, i.e.: 
+
+  ruby play.rb 100 RandomStrategy
+
+    ====== Done! ======
+         Games played:   100
+         Games won:  31
+         Win rate:   31.0%
+
+
+This will simulate 100 hands using the "Random" strategy in which the player randomly choses to hit or stand regardless of what cards he or the dealer is holding.  WikipediaStrategy is slightly better. 
+
+The output is compressed when simulating 100 or more hands.  The results seem to converge around 5-10k hands. 
